@@ -1,15 +1,18 @@
+
 name: Build WorkLeave APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Java
@@ -23,13 +26,12 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Setup Android
-        uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Install SDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Extract project
+      - name: Extract project ZIP
         run: |
           mkdir extracted
           unzip -q WorkLeaveAndroid_phone_build_ready.zip -d extracted
@@ -38,8 +40,9 @@ jobs:
         working-directory: extracted/WorkLeaveAndroid
         run: gradle --no-daemon assembleDebug
 
-      - name: Save APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: WorkLeaveCalendar-APK
           path: extracted/WorkLeaveAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

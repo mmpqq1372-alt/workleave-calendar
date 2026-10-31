@@ -1,0 +1,39 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '*.zip'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract project
+        run: |
+          mkdir project
+          unzip -o *.zip -d project
+          find project -name gradlew -exec chmod +x {} \;
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build APK
+        run: |
+          cd project
+          DIR=$(find . -name gradlew -printf '%h\n' | head -1)
+          cd "$DIR"
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: WorkLeave-APK
+          path: project/**/build/outputs/apk/debug/*.apk
